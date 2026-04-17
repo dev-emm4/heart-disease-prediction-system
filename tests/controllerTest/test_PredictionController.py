@@ -6,7 +6,7 @@ import pytest
 
 from src.domain.predictionModel import NaiveBayes, SVM, DecisionTree
 from src.application import PredictionApplicationService
-from src.controllers import PredictionController, Status, ResponseMsg
+from src.controller import PredictionController, Status, ResponseMsg
 from src.domain.predictionModel import FeatureVector, FeatureVectorAttributes
 from src.infrastructure import DatabaseConnection, FeatureVectorLoader
 from src.infrastructure.persistence import SQLitePredictionResultRepository
@@ -196,7 +196,7 @@ class TestPredictionController:
         response = controller.makeBulkPredictions(NaiveBayes.__name__, CSVLocation,
                                                   dropColumn=[13])  # dropping the target column
 
-        assert response["status"] == Status.success.value
+        assert response["status"] == "success"
         assert isinstance(response["message"], list)
         assert len(response["message"]) == CSVLength
         for prediction in response["message"]:

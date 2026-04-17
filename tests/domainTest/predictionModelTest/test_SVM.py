@@ -29,7 +29,7 @@ class TestSVM:
             model.makePrediction(feature_vectors)
             assert False, "Expected an exception to be raised"
         except TypeError as e:
-            print(e)
+
             assert str(e) == ErrorMsg.PredictionModelInvalidFeatureVector.value
 
     def test_makePrediction_givenListOfNonFeatureVector_raisesException(self):
@@ -40,7 +40,7 @@ class TestSVM:
             model.makePrediction(feature_vectors)
             assert False, "Expected an exception to be raised"
         except TypeError as e:
-            print(e)
+
             assert str(e) == ErrorMsg.PredictionModelInvalidFeatureVector.value
 
     def test_makePrediction_givenNone_raisesException(self):
@@ -50,5 +50,4 @@ class TestSVM:
             model.makePrediction(None)
             assert False, "Expected an exception to be raised"
         except TypeError as e:
-            print(e)
             assert str(e) == ErrorMsg.PredictionModelInvalidFeatureVector.value

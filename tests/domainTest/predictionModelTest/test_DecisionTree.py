@@ -43,7 +43,7 @@ class TestDecisionTree:
             model.makePrediction(featureVectors)
             assert False, "Expected an exception to be raised"
         except TypeError as e:
-            print(e)
+
             assert str(e) == ErrorMsg.PredictionModelInvalidFeatureVector.value
 
     def test_makePrediction_givenNone_raisesException(self):

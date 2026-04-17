@@ -31,7 +31,6 @@ class TestNaiveBayes:
             model.makePrediction(feature_vectors)
             assert False, "Expected an exception to be raised"
         except TypeError as e:
-            print(e)
             assert str(e) == ErrorMsg.PredictionModelInvalidFeatureVector.value
 
     def test_makePrediction_givenListOfNonFeatureVector_raisesException(self):
@@ -42,7 +41,7 @@ class TestNaiveBayes:
             model.makePrediction(featureVectors)
             assert False, "Expected an exception to be raised"
         except TypeError as e:
-            print(e)
+
             assert str(e) == ErrorMsg.PredictionModelInvalidFeatureVector.value
 
     def test_makePrediction_givenNone_raisesException(self):
@@ -52,5 +51,5 @@ class TestNaiveBayes:
             model.makePrediction(None)
             assert False, "Expected an exception to be raised"
         except TypeError as e:
-            print(e)
+
             assert str(e) == ErrorMsg.PredictionModelInvalidFeatureVector.value
