@@ -1,0 +1,7 @@
+SQLAlchemy==2.0.23
+pytest==9.0.3
+
+
+scikit-learn
+onnxruntime
+pandas
