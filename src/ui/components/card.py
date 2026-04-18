@@ -1,28 +1,9 @@
-"""
-components/card.py
-──────────────────
-Helper factories for styled card containers and common UI chrome.
-
-Functions
-─────────
-  make_card(parent, title, subtitle)  → (card_frame, body_frame)
-  make_metric_card(parent, label, value, color)  → frame
-  make_badge(parent, text, color_key)  → tk.Label
-  page_header(parent, title, subtitle)  → frame
-  hline(parent)  → tk.Frame
-  make_button_row(parent)  → tk.Frame
-"""
-
 import tkinter as tk
 from tkinter import ttk
 from ui.theme import COLORS, FONTS, DIMS
 
 
 def make_card(parent, title: str = "", subtitle: str = "") -> tuple[tk.Frame, tk.Frame]:
-    """
-    Returns (outer_card_frame, inner_body_frame).
-    The caller packs/grids the outer frame; places content in the body.
-    """
     card = tk.Frame(
         parent,
         bg=COLORS["surface"],
@@ -60,10 +41,6 @@ def make_card(parent, title: str = "", subtitle: str = "") -> tuple[tk.Frame, tk
 
 
 def make_metric_card(parent, label: str, value: str, accent: str = "primary") -> tk.Frame:
-    """
-    A compact KPI card showing a big number with a label beneath it.
-    accent: key from COLORS or a hex color string.
-    """
     color = COLORS.get(accent, accent)
 
     card = tk.Frame(
@@ -137,10 +114,8 @@ def page_header(parent, title: str, subtitle: str = "") -> tk.Frame:
 
 
 def hline(parent) -> tk.Frame:
-    """1-pixel horizontal rule."""
     return tk.Frame(parent, bg=COLORS["border"], height=1)
 
 
 def make_button_row(parent) -> tk.Frame:
-    """A right-aligned frame suitable for action buttons."""
     return tk.Frame(parent, bg=COLORS["surface"])

@@ -1,10 +1,3 @@
-"""
-utils/validators.py
-───────────────────
-Input-validation helpers used across all views.
-Each function returns (is_valid: bool, error_message: str).
-"""
-
 import os
 import re
 
@@ -18,7 +11,6 @@ def validate_model(model_name: str) -> tuple[bool, str]:
 
 
 def validate_numeric_field(value: str, label: str) -> tuple[bool, str]:
-    """Ensure the string can be parsed as a float."""
     if value.strip() == "":
         return False, f"'{label}' is required."
     try:
@@ -40,10 +32,6 @@ def validate_csv_path(path: str) -> tuple[bool, str]:
 
 
 def validate_column_indices(text: str, label: str = "Drop columns") -> tuple[bool, list | None, str]:
-    """
-    Parse a comma-separated string of column indices.
-    Returns (is_valid, parsed_list_or_None, error_message).
-    """
     text = text.strip()
     if not text:
         return True, [], ""          # Empty is allowed — no columns to drop

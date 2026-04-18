@@ -1,9 +1,3 @@
-"""
-utils/formatters.py
-───────────────────
-Display-formatting helpers: dates, UUIDs, feature vectors, etc.
-"""
-
 from datetime import datetime
 
 

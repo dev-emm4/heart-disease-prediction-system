@@ -1,21 +1,3 @@
-"""
-views/performance_view.py
-──────────────────────────
-View: Model Performance Evaluation
-
-Layout (top → bottom, scrollable)
-  ① Page header
-  ② Evaluation Setup card  (CSV, model, drop cols, target col, evaluate button)
-  ③ Results card           (3 KPI metric cards — revealed after evaluation)
-  ④ About These Metrics card (always visible reference)
-
-All sections are placed in a vertically scrollable canvas so nothing is
-ever hidden behind another widget regardless of window height.
-
-Controller methods used
-  calculatePerformance(modelName, filePath, dropColumn, targetColumn) → dict
-"""
-
 import tkinter as tk
 from tkinter import ttk, filedialog
 from ui.theme import COLORS, FONTS, DIMS
@@ -208,7 +190,6 @@ class PerformanceView(tk.Frame):
             inner = tk.Frame(metric_card, bg=COLORS["surface"])
             inner.pack(padx=DIMS["card_pad"], pady=(10, 14), fill=tk.X)
 
-            # Big value label — stored for later update
             value_lbl = tk.Label(
                 inner, text="—",
                 font=FONTS["metric_value"],
@@ -313,11 +294,9 @@ class PerformanceView(tk.Frame):
             self.notify(response.get("message", "Unknown error."), kind="error")
 
     def _render_metrics(self, data: dict):
-        """Update the three KPI labels and reveal the results card."""
         for key in ("accuracy", "precision", "recall"):
             val = data.get(key)
             text = fmt_percent(val) if isinstance(val, (int, float)) else "—"
             self._metric_value_labels[key].configure(text=text)
 
-        # Show the results card — it sits between config and about cards
         self._results_card.grid()

@@ -1,19 +1,3 @@
-"""
-components/feature_form.py
-──────────────────────────
-Reusable patient-feature input form.
-
-• Dropdowns for every categorical feature (correct UCI dataset values)
-• Numeric Entry for continuous features
-• Groups inputs under clinical section headers
-• Disables sex & fbs automatically when the SVM model is selected
-• ↑ / ↓ arrow-key scrolling — works whenever focus is on any field
-• inject_action_bar(callback) → places Run / Clear buttons as the last
-  row of the scrollable area so they are NEVER hidden off-screen
-• get_values() → dict[str, float]
-• clear()       → resets all fields
-"""
-
 import tkinter as tk
 from tkinter import ttk
 from ui.theme import COLORS, FONTS, DIMS
@@ -69,20 +53,18 @@ _FEATURES = [
 
 _SVM_DISABLED = {"sex", "fbs"}
 
-# How many canvas units one ↑/↓ press scrolls
 _KEY_SCROLL_UNITS = 2
 
 
 class FeatureForm(tk.Frame):
-    """13-field scrollable patient feature input panel."""
 
     def __init__(self, parent, **kwargs):
         super().__init__(parent, bg=COLORS["surface"], **kwargs)
         self._fields: dict[str, tuple] = {}
         self._option_maps: dict[str, dict] = {}
-        self._canvas: tk.Canvas | None = None   # kept for key-scroll access
-        self._inner: tk.Frame | None = None     # the scrollable inner frame
-        self._field_row_count: int = 0          # tracks next available grid row
+        self._canvas: tk.Canvas | None = None   
+        self._inner: tk.Frame | None = None     
+        self._field_row_count: int = 0
         self._build()
 
     # ── Construction ────────────────────────────────────────────────────────────
@@ -106,19 +88,6 @@ class FeatureForm(tk.Frame):
         inner.bind("<Configure>", _on_configure)
         canvas.bind("<Configure>", _on_canvas_resize)
 
-        # ── Scroll bindings ───────────────────────────────────────────────────
-        # Strategy: activate scrolling ONLY while the mouse is hovering over
-        # the form area.  This avoids two problems:
-        #   1. bind_all steals wheel events from other views / widgets.
-        #   2. Binding ↑/↓ on Entry/Combobox widgets fights their own
-        #      native key handling (dropdown navigation, cursor movement).
-        #
-        # When the cursor enters the form canvas (or any child widget inside
-        # it), we attach a wheel listener and an arrow-key listener to the
-        # canvas.  When the cursor leaves, we detach them.  Clicking anywhere
-        # inside the form also gives focus to the canvas so the arrow keys
-        # take effect immediately without needing to move the mouse first.
-
         self._wheel_bind_id:  str | None = None
         self._up_bind_id:     str | None = None
         self._down_bind_id:   str | None = None
@@ -133,8 +102,6 @@ class FeatureForm(tk.Frame):
             canvas.yview_scroll(_KEY_SCROLL_UNITS, "units")
 
         def _activate_scroll(_event=None):
-            """Attach scroll listeners and give focus to the canvas."""
-            # Focus canvas so arrow-key events reach it
             canvas.focus_set()
             if self._wheel_bind_id is None:
                 self._wheel_bind_id = canvas.bind_all(
@@ -145,7 +112,6 @@ class FeatureForm(tk.Frame):
                 self._down_bind_id = canvas.bind("<Down>", _scroll_down)
 
         def _deactivate_scroll(_event=None):
-            """Remove scroll listeners when the cursor leaves the form."""
             if self._wheel_bind_id is not None:
                 canvas.unbind_all("<MouseWheel>")
                 self._wheel_bind_id = None
@@ -156,17 +122,13 @@ class FeatureForm(tk.Frame):
                 canvas.unbind("<Down>")
                 self._down_bind_id = None
 
-        # Activate on mouse-enter / click; deactivate on mouse-leave
         canvas.bind("<Enter>",   _activate_scroll)
         canvas.bind("<Leave>",   _deactivate_scroll)
         canvas.bind("<Button-1>", _activate_scroll)
 
-        # Also activate when the mouse enters any child inside the inner frame
-        # so the user doesn't need to hover the empty canvas margin first.
         inner.bind("<Enter>",    _activate_scroll)
         inner.bind("<Button-1>", _activate_scroll)
 
-        # Keep references so inject_action_bar and set_model can use them
         self._canvas           = canvas
         self._inner            = inner
         self._activate_scroll  = _activate_scroll
@@ -189,13 +151,11 @@ class FeatureForm(tk.Frame):
 
         self._field_row_count = row
 
-        # Spacer before action bar (or bottom padding if no bar injected)
         tk.Frame(inner, bg=COLORS["surface"], height=8).grid(
             row=row, column=0)
         row += 1
-        self._action_bar_row = row   # reserved slot for inject_action_bar
+        self._action_bar_row = row   
 
-        # Bottom breathing room
         tk.Frame(inner, bg=COLORS["surface"], height=16).grid(
             row=row + 1, column=0)
 
@@ -247,10 +207,6 @@ class FeatureForm(tk.Frame):
             )
             widget.grid(row=0, column=1, sticky=tk.EW)
 
-        # Activate form scrolling when the mouse enters any field widget,
-        # and deactivate when it leaves the form entirely.
-        # We do NOT bind Up/Down here — that would conflict with combobox
-        # dropdown navigation and entry cursor movement.
         widget.bind("<Enter>",    self._activate_scroll)
         widget.bind("<Button-1>", self._activate_scroll)
 
@@ -258,20 +214,6 @@ class FeatureForm(tk.Frame):
 
     # ── Public API ──────────────────────────────────────────────────────────────
     def inject_action_bar(self, build_fn) -> tk.Frame:
-        """
-        Call this ONCE after construction to place action buttons at the
-        bottom of the scrollable area.
-
-        build_fn(parent_frame) is called with a plain Frame already placed
-        in the correct grid slot — the caller packs buttons into it.
-
-        Returns the frame so the caller can keep references to its buttons.
-
-            def build_actions(bar):
-                ttk.Button(bar, text="Run", ...).pack(side=tk.LEFT)
-
-            form.inject_action_bar(build_actions)
-        """
         bar = tk.Frame(self._inner, bg=COLORS["surface"])
         bar.grid(row=self._action_bar_row, column=0,
                  sticky=tk.EW, padx=DIMS["card_pad"], pady=(4, 0))
@@ -282,7 +224,6 @@ class FeatureForm(tk.Frame):
         return bar
 
     def set_model(self, model_name: str):
-        """Disable sex & fbs for SVM; re-enable for other models."""
         svm_mode = (model_name == "SVM")
         for key in _SVM_DISABLED:
             if key not in self._fields:
@@ -297,11 +238,6 @@ class FeatureForm(tk.Frame):
             lbl.configure(fg=fg)
 
     def get_values(self) -> dict[str, float]:
-        """
-        Read and validate all enabled inputs.
-        Returns a feature dict ready for the controller.
-        Raises ValueError with a descriptive message on bad input.
-        """
         result = {}
         for key, (var, widget, _lbl) in self._fields.items():
             try:
@@ -334,12 +270,10 @@ class FeatureForm(tk.Frame):
         return result
 
     def clear(self):
-        """Reset every field to empty / unselected."""
         for _, (var, _widget, _) in self._fields.items():
             var.set("")
 
     def scroll_to_top(self):
-        """Convenience: jump the form back to the top."""
         self._canvas.yview_moveto(0)
 
     def _label_for(self, key: str) -> str:

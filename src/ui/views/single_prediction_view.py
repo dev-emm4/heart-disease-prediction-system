@@ -1,19 +1,3 @@
-"""
-views/single_prediction_view.py
-────────────────────────────────
-View: Single Patient Prediction
-
-Layout
-  LEFT  — Model selector card + scrollable feature form
-           (Run Prediction / Clear buttons are injected at the
-            bottom of the form's canvas so they scroll with it
-            and are NEVER hidden off-screen)
-  RIGHT — Result card (updates after each prediction)
-
-Controller methods used
-  makePrediction(modelName, featureJson) → dict
-"""
-
 import tkinter as tk
 from tkinter import ttk
 from ui.theme import COLORS, FONTS, DIMS
@@ -57,10 +41,10 @@ class SinglePredictionView(tk.Frame):
         # ── Left column ───────────────────────────────────────────────────────
         left = tk.Frame(body, bg=COLORS["window_bg"])
         left.grid(row=0, column=0, sticky=tk.NSEW, padx=(0, 12))
-        left.rowconfigure(1, weight=1)   # feature card expands
+        left.rowconfigure(1, weight=1)
 
         self._build_model_selector(left)
-        self._build_feature_panel(left)  # also injects action bar at bottom
+        self._build_feature_panel(left)
 
         # ── Right column ──────────────────────────────────────────────────────
         right = tk.Frame(body, bg=COLORS["window_bg"])
@@ -97,7 +81,6 @@ class SinglePredictionView(tk.Frame):
                 bg=COLORS["surface"], fg=COLORS["text_muted"],
             ).pack(anchor=tk.W, padx=(20, 0))
 
-        # SVM info note — shown/hidden by _on_model_change
         self._svm_note = tk.Label(
             body,
             text="ℹ  SVM does not use Sex or Fasting Blood Sugar — those fields are disabled.",
@@ -116,16 +99,9 @@ class SinglePredictionView(tk.Frame):
         self.feature_form = FeatureForm(body)
         self.feature_form.pack(fill=tk.BOTH, expand=True)
 
-        # ── Inject Run / Clear buttons at the bottom of the scrollable canvas ─
-        # They live INSIDE the canvas so scrolling to the bottom always reveals
-        # them — regardless of window height or which model is selected.
         self.feature_form.inject_action_bar(self._build_action_widgets)
 
     def _build_action_widgets(self, bar: tk.Frame):
-        """
-        Called by inject_action_bar with a Frame already placed at the
-        bottom of the form's scrollable canvas.  We just pack buttons in.
-        """
         hline(bar).pack(fill=tk.X, pady=(0, 8))
 
         btn_row = tk.Frame(bar, bg=COLORS["surface"])

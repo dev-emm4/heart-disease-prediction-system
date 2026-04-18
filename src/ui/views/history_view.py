@@ -1,45 +1,3 @@
-"""
-views/history_view.py
-──────────────────────
-View: Prediction History
-
-Pagination strategy (memory-efficient)
-───────────────────────────────────────
-  Only the CURRENT PAGE of records is ever held in memory.
-  The controller's getAllPaginatedPredictions(page, pageSize) returns:
-    {
-      "predictions":     list[dict],   ← records for this page only
-      "predictionCount": int           ← total records in the database
-    }
-  The UI derives total pages from predictionCount and PAGE_SIZE.
-  Navigating to a new page, changing the model filter, or refreshing
-  all trigger a fresh controller call — nothing is cached client-side.
-
-  NOTE: the model filter is applied server-side via the model filter
-  combobox. When a specific model is selected the view calls
-  getPredictionsByModel() instead so the total count reflects the
-  filtered dataset.
-
-Features
-  • Server-side paginated loading (PAGE_SIZE = 500)
-  • Filter by model (triggers fresh load, resets to page 1)
-  • Click a row → feature-vector detail panel on the right
-  • ✕ close button → collapses panel AND clears table selection
-  • Delete a single record → reloads current page
-  • Clear All History → calls deleteAllPrediction(), resets view
-  • Detail panel is wider (weight=3) for better readability
-
-Controller methods used
-  getAllPaginatedPredictions(page: int, pageSize: int) → dict
-    message: {"predictions": list, "predictionCount": int}
-
-  getPredictionsByModel(modelName: str) → dict
-    message: list[dict]   (used for filtered view)
-
-  deletePrediction(predictionId: str) → dict
-  deleteAllPrediction() → dict
-"""
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 from ui.theme import COLORS, FONTS, DIMS
@@ -48,11 +6,11 @@ from ui.components.data_table import DataTable
 from ui.utils.formatters import fmt_timestamp, fmt_uuid_short, fmt_feature_vector
 
 
-PAGE_SIZE = 500   # records per page — change here to adjust globally
+PAGE_SIZE = 500
 
 
 class HistoryView(tk.Frame):
-    """Browse, inspect, and delete stored prediction records."""
+
 
     MODELS = ["All Models", "NaiveBayes", "SVM", "DecisionTree"]
 
@@ -62,15 +20,15 @@ class HistoryView(tk.Frame):
         self.notify = notify
 
         # ── Pagination state ─────────────────────────────────────────────────
-        # Only the current page's records are kept; nothing else is cached.
-        self._current_page:  int        = 0      # 0-based
-        self._total_count:   int        = 0      # total records (from server)
-        self._page_records:  list[dict] = []     # records on the current page
+
+        self._current_page:  int        = 0
+        self._total_count:   int        = 0
+        self._page_records:  list[dict] = []
 
         self._build()
 
     def on_show(self):
-        """Auto-refresh every time this view becomes active."""
+
         self._reset_and_load()
 
     # ── Layout ──────────────────────────────────────────────────────────────────
@@ -87,8 +45,8 @@ class HistoryView(tk.Frame):
         body = tk.Frame(outer, bg=COLORS["window_bg"])
         body.grid(row=1, column=0, sticky=tk.NSEW)
         body.rowconfigure(0, weight=1)
-        body.columnconfigure(0, weight=5)   # records list
-        body.columnconfigure(1, weight=3)   # detail panel — wider than before
+        body.columnconfigure(0, weight=5)
+        body.columnconfigure(1, weight=3)
 
         self._build_list_panel(body)
         self._build_detail_panel(body)
@@ -164,7 +122,7 @@ class HistoryView(tk.Frame):
             fg=COLORS["text_muted"])
         self._range_lbl.pack(side=tk.RIGHT)
 
-        self._pagination_bar.grid_remove()   # hidden until data has >1 page
+        self._pagination_bar.grid_remove()
 
         # ── Action bar ────────────────────────────────────────────────────────
         action_bar = tk.Frame(body, bg=COLORS["surface"])
@@ -177,7 +135,6 @@ class HistoryView(tk.Frame):
             state="disabled")
         self._delete_btn.pack(side=tk.LEFT)
 
-        # Clear All — now wired to deleteAllPrediction()
         ttk.Button(
             action_bar,
             text="  🚫  Clear All History",
@@ -193,7 +150,6 @@ class HistoryView(tk.Frame):
         body.rowconfigure(1, weight=1)
         body.columnconfigure(0, weight=1)
 
-        # Header: title left, ✕ right
         header = tk.Frame(body, bg=COLORS["surface"])
         header.grid(row=0, column=0, sticky=tk.EW,
                     padx=DIMS["card_pad"], pady=(DIMS["card_pad"], 4))
@@ -244,7 +200,7 @@ class HistoryView(tk.Frame):
         detail_inner.pack(fill=tk.BOTH, expand=True,
                           padx=DIMS["card_pad"], pady=DIMS["inner_pad"])
         detail_inner.columnconfigure(1, weight=1)
-        detail_inner.rowconfigure(6, weight=1)   # fv_frame row stretches vertically
+        detail_inner.rowconfigure(6, weight=1)
 
         def meta_row(label, attr, row):
             tk.Label(detail_inner, text=label, font=FONTS["label_bold"],
@@ -263,10 +219,8 @@ class HistoryView(tk.Frame):
         meta_row("Result",     "_d_result", 2)
         meta_row("Timestamp",  "_d_time",   3)
 
-        # When the detail panel is resized, update wraplength on value labels
-        # so long text (e.g. full UUIDs) wraps cleanly instead of overflowing.
         def _update_wraplength(event):
-            available = max(60, event.width - 120)   # subtract label column width
+            available = max(60, event.width - 120)
             for attr in ("_d_id", "_d_model", "_d_result", "_d_time"):
                 widget = getattr(self, attr, None)
                 if widget:
@@ -282,11 +236,10 @@ class HistoryView(tk.Frame):
                  fg=COLORS["text_muted"]).grid(
             row=5, column=0, columnspan=2, sticky=tk.W, pady=(0, 4))
 
-        # fv_frame: sticky=NSEW so it fills the row that has weight=1
         fv_frame = tk.Frame(detail_inner, bg=COLORS["surface_alt"])
         fv_frame.grid(row=6, column=0, columnspan=2, sticky=tk.NSEW, pady=(0, 4))
         fv_frame.columnconfigure(0, weight=1)
-        fv_frame.rowconfigure(0, weight=1)   # text widget row stretches
+        fv_frame.rowconfigure(0, weight=1)
 
         self._fv_text = tk.Text(
             fv_frame,
@@ -309,27 +262,15 @@ class HistoryView(tk.Frame):
 
     # ── Data loading ─────────────────────────────────────────────────────────────
     def _reset_and_load(self):
-        """Reset to page 0 and load from the server."""
         self._filter_var.set("All Models")
         self._current_page = 0
         self._fetch_page()
 
     def _on_filter_change(self):
-        """Model filter changed — go back to page 0 and reload."""
         self._current_page = 0
         self._fetch_page()
 
     def _fetch_page(self):
-        """
-        Ask the controller for the current page.
-
-        Both endpoints share the same response shape:
-            {"predictions": list[dict], "predictionCount": int}
-
-        The controller uses 1-based page numbers (page <= 0 returns an
-        error), so we always pass self._current_page + 1.  Internal state
-        remains 0-based throughout the UI.
-        """
         model_filter   = self._filter_var.get()
         one_based_page = self._current_page + 1   # controller expects 1-based
 
@@ -399,7 +340,7 @@ class HistoryView(tk.Frame):
 
         start = page * PAGE_SIZE + 1
         end   = min((page + 1) * PAGE_SIZE, self._total_count)
-        # Guard against 0-count edge case
+
         if self._total_count == 0:
             self._range_lbl.configure(text="No records")
         else:
@@ -504,10 +445,7 @@ class HistoryView(tk.Frame):
 
         if response.get("status")[0] == "success":
             if response.get("message", False):
-                # Decrement total and reload the current page so the table
-                # reflects the removal without fetching the whole dataset.
                 self._total_count = max(0, self._total_count - 1)
-                # If this deletion emptied the current page, go back one page
                 if (not self._page_records or
                         len(self._page_records) == 1) and self._current_page > 0:
                     self._current_page -= 1
@@ -520,10 +458,6 @@ class HistoryView(tk.Frame):
             self.notify(response.get("message", "Delete failed."), kind="error")
 
     def _on_clear_all(self):
-        """
-        Delete every prediction record via deleteAllPrediction().
-        Shows a strong confirmation dialog before proceeding.
-        """
         if self._total_count == 0:
             self.notify("There are no records to clear.", kind="info")
             return

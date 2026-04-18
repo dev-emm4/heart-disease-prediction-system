@@ -1,15 +1,3 @@
-"""
-views/statistics_view.py
-─────────────────────────
-View: Model Usage Statistics
-
-Shows how many predictions each model has made via metric cards
-plus a simple canvas-drawn horizontal bar chart.
-
-Controller methods used
-  getStatistics() → dict
-"""
-
 import tkinter as tk
 from tkinter import ttk, font as tkfont
 from ui.theme import COLORS, FONTS, DIMS
@@ -67,7 +55,6 @@ class StatisticsView(tk.Frame):
         for i in range(4):
             self._kpi_row.columnconfigure(i, weight=1)
 
-        # We build the 4 KPI cards (Total + 3 models) and store label refs
         self._kpi_labels: dict[str, tk.Label] = {}
         self._kpi_cards = {}
 
@@ -165,20 +152,16 @@ class StatisticsView(tk.Frame):
         models = [m for m in ("NaiveBayes", "SVM", "DecisionTree")
                   if m in self._stats_data]
 
-        # ── Measure real text widths so nothing ever gets clipped ─────────────
-        # Build tk Font objects from our theme tuples so we can call .measure()
         font_bold   = tkfont.Font(family=FONTS["body_bold"][0],
                                   size=FONTS["body_bold"][1],
                                   weight="bold")
         font_body   = tkfont.Font(family=FONTS["body"][0],
                                   size=FONTS["body"][1])
 
-        # Widest left label (model name)
         pad_left = max(
             font_bold.measure(_MODEL_DISPLAY.get(m, m)) for m in models
         ) + 16   # 16px gap between label and bar
 
-        # Widest right label  e.g. "1 025  (43.6%)"
         right_labels = []
         for m in models:
             count = self._stats_data.get(m, 0)
@@ -216,7 +199,6 @@ class StatisticsView(tk.Frame):
                 fill=color, outline="", width=0,
             )
 
-            # Model label — right-aligned flush to the start of the bar
             c.create_text(
                 x_left - 10, y_mid,
                 text=_MODEL_DISPLAY.get(model, model),
@@ -225,7 +207,6 @@ class StatisticsView(tk.Frame):
                 fill=COLORS["text_primary"],
             )
 
-            # Count + percentage — left-aligned just past the end of the track
             c.create_text(
                 x_left + bar_area_w + 10, y_mid,
                 text=right_text,

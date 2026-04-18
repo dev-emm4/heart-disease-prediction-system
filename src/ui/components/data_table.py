@@ -1,31 +1,9 @@
-"""
-components/data_table.py
-────────────────────────
-Reusable Treeview-based table with:
-  • Alternating row colours
-  • Sortable columns (click heading)
-  • Vertical scrollbar
-  • Striped tags: 'even' / 'odd'
-
-Usage:
-    cols = [("id", "ID", 120), ("model", "Model", 110), ...]
-    table = DataTable(parent, columns=cols)
-    table.pack(fill=tk.BOTH, expand=True)
-    table.insert_row(("abc", "NaiveBayes", ...))
-    table.clear()
-"""
-
 import tkinter as tk
 from tkinter import ttk
 from ui.theme import COLORS, FONTS
 
 
 class DataTable(tk.Frame):
-    """
-    Wraps ttk.Treeview with a scrollbar.
-    columns: list of (key, heading_text, width_px)
-    """
-
     def __init__(self, parent, columns: list[tuple[str, str, int]], show_index: bool = False, **kwargs):
         super().__init__(parent, bg=COLORS["surface"], **kwargs)
 
@@ -62,19 +40,16 @@ class DataTable(tk.Frame):
 
     # ── Public API ──────────────────────────────────────────────────────────────
     def insert_row(self, values: tuple, tags: tuple = ()) -> str:
-        """Append one row.  Returns the new item's iid."""
         tag = "even" if self._row_count % 2 == 0 else "odd"
         iid = self.tree.insert("", tk.END, values=values, tags=(tag, *tags))
         self._row_count += 1
         return iid
 
     def clear(self):
-        """Remove all rows."""
         self.tree.delete(*self.tree.get_children())
         self._row_count = 0
 
     def selected_values(self) -> tuple | None:
-        """Return the values of the currently selected row, or None."""
         sel = self.tree.selection()
         if not sel:
             return None
@@ -85,7 +60,6 @@ class DataTable(tk.Frame):
         return sel[0] if sel else None
 
     def delete_selected(self) -> tuple | None:
-        """Delete the selected row and return its values."""
         iid = self.selected_iid()
         if iid:
             vals = self.tree.item(iid, "values")
@@ -95,7 +69,6 @@ class DataTable(tk.Frame):
         return None
 
     def bind_select(self, callback):
-        """callback(values_tuple) called when a row is selected."""
         self.tree.bind("<<TreeviewSelect>>", lambda _: self._on_select(callback))
 
     def get_all_values(self) -> list[tuple]:

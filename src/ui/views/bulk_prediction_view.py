@@ -30,7 +30,6 @@ class BulkPredictionView(tk.Frame):
 
     MODELS = ["NaiveBayes", "SVM", "DecisionTree"]
 
-    # Minimum pixel heights for each pane so neither collapses entirely
     _CONFIG_MIN_H  = 180
     _RESULTS_MIN_H = 200
 
@@ -56,11 +55,9 @@ class BulkPredictionView(tk.Frame):
         ).grid(row=0, column=0, sticky=tk.W, pady=(0, 12))
 
         # ── Draggable PanedWindow ─────────────────────────────────────────────
-        # orient=VERTICAL means the sash runs horizontally and you drag it up/down
         self._paned = ttk.PanedWindow(outer, orient=tk.VERTICAL)
         self._paned.grid(row=1, column=0, sticky=tk.NSEW)
 
-        # Apply sash styling so it is clearly visible / grabbable
         style = ttk.Style()
         style.configure(
             "Sash",
@@ -73,26 +70,22 @@ class BulkPredictionView(tk.Frame):
         # ── Top pane: config ──────────────────────────────────────────────────
         config_host = tk.Frame(self._paned, bg=COLORS["window_bg"])
         self._build_config_card(config_host)
-        self._paned.add(config_host, weight=0)   # weight=0 → doesn't grab extra space
+        self._paned.add(config_host, weight=0)
 
         # ── Bottom pane: results ──────────────────────────────────────────────
         results_host = tk.Frame(self._paned, bg=COLORS["window_bg"])
         results_host.rowconfigure(0, weight=1)
         results_host.columnconfigure(0, weight=1)
         self._build_results_card(results_host)
-        self._paned.add(results_host, weight=1)  # weight=1 → absorbs all extra space
+        self._paned.add(results_host, weight=1)
 
-        # After the window is drawn, push the sash down so the results pane
-        # gets roughly 65 % of the available height by default.
         self._paned.bind("<Map>", self._set_initial_sash, add="+")
 
     def _set_initial_sash(self, _event=None):
-        """Position the sash once the widget has a real size."""
         self._paned.unbind("<Map>")          # run only once
         self.update_idletasks()
         total = self._paned.winfo_height()
         if total > 10:
-            # Place sash so the config pane gets ~35 % of height
             sash_pos = max(self._CONFIG_MIN_H, int(total * 0.35))
             self._paned.sashpos(0, sash_pos)
 
@@ -102,7 +95,6 @@ class BulkPredictionView(tk.Frame):
         card.pack(fill=tk.BOTH, expand=True)
         body.columnconfigure(1, weight=1)
 
-        # CSV File
         tk.Label(
             body, text="CSV File", font=FONTS["label_bold"],
             bg=COLORS["surface"], fg=COLORS["text_secondary"],
@@ -178,12 +170,6 @@ class BulkPredictionView(tk.Frame):
 
     # ── Results card (bottom pane) ───────────────────────────────────────────────
     def _build_results_card(self, parent):
-        """
-        Fills the entire bottom pane.
-        Two-column split inside:
-          LEFT  (weight 3) — summary bar + predictions table
-          RIGHT (weight 2) — feature vector detail panel
-        """
         card, body = make_card(parent, title="Results")
         card.grid(row=0, column=0, sticky=tk.NSEW)
         body.configure(padx=0, pady=0)
@@ -257,7 +243,6 @@ class BulkPredictionView(tk.Frame):
             font=FONTS["heading3"], bg=COLORS["surface"], fg=COLORS["text_primary"],
         ).pack(side=tk.LEFT)
 
-        # Close button — dismisses the detail panel back to the placeholder
         close_btn = tk.Label(
             panel_hdr, text="  ✕  ",
             font=FONTS["body_bold"],

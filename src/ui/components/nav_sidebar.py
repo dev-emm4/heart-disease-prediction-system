@@ -1,20 +1,8 @@
-"""
-components/nav_sidebar.py
-──────────────────────────
-Left-hand navigation sidebar.
-
-Usage:
-    sidebar = NavSidebar(parent, items=[("key", "Label"), ...], on_select=callback)
-    sidebar.pack(side=tk.LEFT, fill=tk.Y)
-    sidebar.set_active("key")
-"""
-
 import tkinter as tk
 from ui.theme import COLORS, FONTS, DIMS
 
 
 class NavSidebar(tk.Frame):
-    """Dark sidebar with logo, navigation buttons, and a footer."""
 
     def __init__(self, parent, items: list[tuple[str, str]], on_select):
         super().__init__(parent, bg=COLORS["sidebar_bg"], width=DIMS["sidebar_width"])
@@ -94,7 +82,6 @@ class NavSidebar(tk.Frame):
 # ── Private helpers ──────────────────────────────────────────────────────────────
 
 class _NavButton(tk.Frame):
-    """A single navigation item with active / hover states."""
 
     def __init__(self, parent, key: str, label: str, on_click):
         super().__init__(parent, bg=COLORS["sidebar_bg"], cursor="hand2")
@@ -114,7 +101,6 @@ class _NavButton(tk.Frame):
         )
         self.label_widget.pack(fill=tk.X)
 
-        # Bind events on both frame and label so the entire row is clickable
         for widget in (self, self.label_widget):
             widget.bind("<Button-1>", self._on_click)
             widget.bind("<Enter>",    self._on_enter)
@@ -143,7 +129,6 @@ class _NavButton(tk.Frame):
 
 
 class _HRule(tk.Frame):
-    """1-pixel horizontal rule."""
 
     def __init__(self, parent, color: str):
         super().__init__(parent, bg=color, height=1)

@@ -1,10 +1,3 @@
-"""
-theme.py
-────────
-Centralised design tokens for the CardioAI application.
-Edit this file to restyle the entire UI in one place.
-"""
-
 # ── Colour Palette ──────────────────────────────────────────────────────────────
 COLORS = {
     # ── Sidebar (dark navy) ──────────────────────────────────────────────────
@@ -106,7 +99,7 @@ DIMS = {
     "widget_gap":       6,
     "btn_pad_x":        16,
     "btn_pad_y":        7,
-    "field_width":      26,     # Entry widget width (chars)
-    "label_width":      28,     # Label column width (chars)
-    "section_gap":      14,     # Vertical gap between form sections
+    "field_width":      26,
+    "label_width":      28,
+    "section_gap":      14,
 }

@@ -1,20 +1,6 @@
-"""
-components/status_bar.py
-────────────────────────
-Thin status bar docked at the bottom of the window.
-Colour-codes messages: success (green), error (red), info (blue), warning (orange).
-
-Usage:
-    bar = StatusBar(parent)
-    bar.pack(side=tk.BOTTOM, fill=tk.X)
-    bar.notify("Prediction complete.", kind="success")
-"""
-
 import tkinter as tk
 from ui.theme import COLORS, FONTS
 
-
-# Map kind → (background, foreground)
 _THEME = {
     "success": (COLORS["success_bg"],  COLORS["success_text"]),
     "error":   (COLORS["danger_bg"],   COLORS["danger_text"]),
@@ -33,7 +19,6 @@ _ICON = {
 
 
 class StatusBar(tk.Frame):
-    """Single-line status bar with auto-clear after a timeout."""
 
     def __init__(self, parent, auto_clear_ms: int = 6000):
         super().__init__(parent, height=28)
@@ -54,10 +39,6 @@ class StatusBar(tk.Frame):
 
     # ── Public API ──────────────────────────────────────────────────────────────
     def notify(self, message: str, kind: str = "info"):
-        """
-        Display a message.
-        kind: 'success' | 'error' | 'warning' | 'info'
-        """
         icon = _ICON.get(kind, "")
         self._var.set(f"  {icon}  {message}")
         self._set_kind(kind)

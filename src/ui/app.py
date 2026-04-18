@@ -1,27 +1,8 @@
-"""
-app.py
-──────
-Main application entry point.
-
-Typical usage (from project root, with your real controller):
-
-    from controller.PredictionController import PredictionController
-    from UI.app import HeartApp
-
-    HeartApp(controller=PredictionController()).run()
-
-For UI development without the controller:
-
-    from UI.app import HeartApp
-    HeartApp().run()            # uses a built-in stub controller
-"""
-
 import sys
 import os
 import tkinter as tk
 from tkinter import ttk
 
-# Allow sibling imports regardless of where the script is launched from
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ui.theme import COLORS, FONTS, DIMS
@@ -35,18 +16,6 @@ from ui.views.statistics_view        import StatisticsView
 
 
 class HeartApp:
-    """
-    Root application window.
-
-    Responsibilities
-    ────────────────
-    • Build the three-zone layout: sidebar | content | status bar
-    • Instantiate all views once and stack them with place()
-    • Handle navigation (raise active view, update sidebar highlight)
-    • Forward the notify callback to all views
-    """
-
-    # (route_key, sidebar_label, ViewClass)
     _NAV_ITEMS = [
         ("predict",    "🫀  Predict",       SinglePredictionView),
         ("bulk",       "📋  Bulk Predict",  BulkPredictionView),
@@ -75,7 +44,6 @@ class HeartApp:
 
     # ── Layout construction ──────────────────────────────────────────────────────
     def _build_layout(self):
-        # Left: sidebar (fixed width, full height)
         self.sidebar = NavSidebar(
             self.root,
             items=[(k, lbl) for k, lbl, _ in self._NAV_ITEMS],
@@ -103,7 +71,7 @@ class HeartApp:
                 controller=self.controller,
                 notify=self.status_bar.notify,
             )
-            # Stack all views at the same position; tkraise() shows the top one
+
             view.place(relx=0, rely=0, relwidth=1, relheight=1)
             self._views[key] = view
 
@@ -244,12 +212,6 @@ def _apply_ttk_styles(root: tk.Tk):
 
 # ── Development stub controller ─────────────────────────────────────────────────
 class _StubController:
-    """
-    Drop-in stub used when no real controller is provided.
-    Returns plausible dummy responses so the UI can be developed and tested
-    without the ML backend.
-    """
-
     import uuid as _uuid
     from datetime import datetime as _datetime
 
