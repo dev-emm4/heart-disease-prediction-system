@@ -200,9 +200,185 @@ class TestSQLitePredictionResultRepository:
                 else:
                     repository.findByModelName(None)
 
-                assert False,  "should raise exception"
+                assert False, "should raise exception"
             except TypeError as e:
                 assert str(e) == ErrorMsg.PredictionResultRepoInvalidPredictionModelName.value
+
+    def test_findAllPaginated_withValidPageAndPageSize_returnPredictions(self, repository, sampleFeatureVector):
+        pred1 = PredictionResult(
+            Id=uuid4(),
+            modelName="DecisionTree",
+            featureVector=sampleFeatureVector,
+            isMalignant=True,
+            timeStamp=datetime.now()
+        )
+        pred2 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+        pred3 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+        repository.saveAll([pred1, pred2, pred3])
+
+        predictionResults: list[PredictionResult] = repository.findAllPaginated(1, 2)
+
+        assert len(predictionResults) == 2
+
+    def test_findAllPaginated_withInvalidPageAndPageSize_raiseException(self, repository):
+        for i in range(8):
+            try:
+                if i == 0:
+                    repository.findAllPaginated("0", 40)
+                elif i == 1:
+                    repository.findAllPaginated(1, "40")
+                elif i == 2:
+                    repository.findAllPaginated(None, 50)
+                elif i == 3:
+                    repository.findAllPaginated(0, 50)
+                elif i == 4:
+                    repository.findAllPaginated(-2, 50)
+                elif i == 5:
+                    repository.findAllPaginated(2, -1)
+                else:
+                    repository.findAllPaginated(2, None)
+            except TypeError as e:
+                assert str(e) in [ErrorMsg.PredictionResultRepoInvalidPageSize.value,
+                                  ErrorMsg.PredictionResultRepoInvalidPage.value]
+
+    def test_findByNamePaginated_withValidParameters_returnPredictions(self, repository, sampleFeatureVector):
+        pred1 = PredictionResult(
+            Id=uuid4(),
+            modelName="DecisionTree",
+            featureVector=sampleFeatureVector,
+            isMalignant=True,
+            timeStamp=datetime.now()
+        )
+        pred2 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+        pred3 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+        repository.saveAll([pred1, pred2, pred3])
+
+        predictionResults: list[PredictionResult] = repository.findByNamePaginated("NaiveBayes", 1, 3)
+
+        assert len(predictionResults) == 2
+
+    def test_findByNamePaginated_withInvalidParameters_raiseException(self, repository):
+        for i in range(11):
+            try:
+                if i == 0:
+                    repository.findByNamePaginated("NaiveBayes", "0", 40)
+                elif i == 1:
+                    repository.findByNamePaginated("NaiveBayes", 1, "40")
+                elif i == 2:
+                    repository.findByNamePaginated("NaiveBayes", None, 50)
+                elif i == 3:
+                    repository.findByNamePaginated("NaiveBayes", 0, 50)
+                elif i == 4:
+                    repository.findByNamePaginated("NaiveBayes", -2, 50)
+                elif i == 5:
+                    repository.findByNamePaginated("NaiveBayes", 2, -1)
+                elif i == 6:
+                    repository.findByNamePaginated("invalidModelName", 0, 50)
+                elif i == 7:
+                    repository.findByNamePaginated(10, -2, 50)
+                elif i == 8:
+                    repository.findByNamePaginated(None, 2, -1)
+                else:
+                    repository.findByNamePaginated("NaiveBayes", 2, None)
+            except TypeError as e:
+                assert str(e) in [ErrorMsg.PredictionResultRepoInvalidPageSize.value,
+                                  ErrorMsg.PredictionResultRepoInvalidPage.value,
+                                  ErrorMsg.PredictionResultRepoInvalidPredictionModelName.value]
+
+    def test_countByName_withValidParameters_returnNumberOfModelPrediction(self, repository, sampleFeatureVector):
+        pred1 = PredictionResult(
+            Id=uuid4(),
+            modelName="DecisionTree",
+            featureVector=sampleFeatureVector,
+            isMalignant=True,
+            timeStamp=datetime.now()
+        )
+        pred2 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+        pred3 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+
+        repository.saveAll([pred1, pred2, pred3])
+
+        numOfNBPrediction: int = repository.countByName("NaiveBayes")
+        assert numOfNBPrediction == 2
+
+        numOfDTPrediction: int = repository.countByName("DecisionTree")
+        assert numOfDTPrediction == 1
+
+    def test_countByName_withInvalidParameters_raiseException(self, repository):
+        for i in range(4):
+            try:
+                if i == 0:
+                    repository.countByName("invalidModelName")
+                if i == 1:
+                    repository.countByName(10)
+                else:
+                    repository.countByName(None)
+            except TypeError as e:
+                assert str(e) == ErrorMsg.PredictionResultRepoInvalidPredictionModelName.value
+
+    def test_countAll_returnNumberOfPredictions(self, repository, sampleFeatureVector):
+        pred1 = PredictionResult(
+            Id=uuid4(),
+            modelName="DecisionTree",
+            featureVector=sampleFeatureVector,
+            isMalignant=True,
+            timeStamp=datetime.now()
+        )
+        pred2 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+        pred3 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+
+        repository.saveAll([pred1, pred2, pred3])
+
+        numOfPrediction: int = repository.countAll()
+        assert numOfPrediction == 3
 
     def test_delete_withExistingPrediction_shouldDelete(self, repository, samplePrediction):
         repository.saveAll([samplePrediction])
@@ -231,6 +407,38 @@ class TestSQLitePredictionResultRepository:
                 assert False, "Exception Expected"
             except TypeError as e:
                 assert str(e) == ErrorMsg.PredictionResultRepoInvalidPredictionId.value
+
+    def test_deleteAll_returnRowCountOfDeletedRows(self, repository, sampleFeatureVector):
+        pred1 = PredictionResult(
+            Id=uuid4(),
+            modelName="DecisionTree",
+            featureVector=sampleFeatureVector,
+            isMalignant=True,
+            timeStamp=datetime.now()
+        )
+        pred2 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+        pred3 = PredictionResult(
+            Id=uuid4(),
+            modelName="NaiveBayes",
+            featureVector=sampleFeatureVector,
+            isMalignant=False,
+            timeStamp=datetime.now()
+        )
+
+        repository.saveAll([pred1, pred2, pred3])
+        numOfDeletedCol = repository.deleteAll()
+
+        assert numOfDeletedCol == 3
+
+        numOfDeletedCol = repository.deleteAll()
+
+        assert numOfDeletedCol == 0
 
     def test_featureVectorSerialization(self, repository, sampleFeatureVector):
         prediction = PredictionResult(

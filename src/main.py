@@ -20,7 +20,7 @@ import sys
 # Ensure the project root is on the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from UI.app import HeartApp
+from ui.app import HeartApp
 
 # ── Import the real controller ────────────────────────────────────────────────
 try:

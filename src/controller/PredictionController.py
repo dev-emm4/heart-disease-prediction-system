@@ -130,11 +130,53 @@ class PredictionController:
 
     def getAllPredictions(self) -> Dict[str, Any]:
         try:
-            predictions = self._service.retrieveAllPredictions()
+            predictions: list[PredictionResult] = self._service.retrieveAllPredictions()
             return self._createMessage(Status.success.value, [p.__json__() for p in predictions])
 
         except Exception as e:
             return self._createMessage(Status.internalError.value, ResponseMsg.UnexpectedErrorEncountered.value)
+
+    def getAllPaginatedPredictions(self, page: (int | float), pageSize: (int | float)) -> dict[str, Any]:
+        try:
+            AssertionConcern.assertIsType(page, (int, float), ErrorMsg.PredictionControllerInvalidPage.value)
+            AssertionConcern.assertIsType(pageSize, (int, float), ErrorMsg.PredictionControllerInvalidPageSize.value)
+            AssertionConcern.asserFalse(page <= 0, ErrorMsg.PredictionControllerInvalidPage.value)
+            AssertionConcern.asserFalse(pageSize < 0, ErrorMsg.PredictionControllerInvalidPageSize.value)
+
+            predictions: list[PredictionResult] = self._service.retrievePaginatedPredictions(page, pageSize)
+            predictionCount: int = self._service.getPredictionCount()
+            msg = {"predictions": [p.__json__() for p in predictions],
+                   "predictionCount": predictionCount}
+
+            return self._createMessage(Status.success.value, msg)
+        except TypeError as e:
+            if str(e) in ErrorMsg.predictionControllerSpecificErrorMsg():
+                return self._createMessage(Status.valueError.value, ResponseMsg.InvalidValueProvided.value)
+        except Exception as e:
+            return self._createMessage(Status.internalError.value, ResponseMsg.UnexpectedErrorEncountered.value)
+
+    def getPredictionsByNamePaginated(self, modelName: str ,page: (int | float), pageSize: (int | float)) -> dict[str, Any]:
+        try:
+            AssertionConcern.assertIsType(modelName, str, ErrorMsg.PredictionControllerInvalidModelName.value)
+            AssertionConcern.assertItemIn(modelName, [NaiveBayes.__name__, SVM.__name__, DecisionTree.__name__],
+                                          ErrorMsg.PredictionControllerInvalidModelName.value)
+            AssertionConcern.assertIsType(page, (int, float), ErrorMsg.PredictionControllerInvalidPage.value)
+            AssertionConcern.assertIsType(pageSize, (int, float), ErrorMsg.PredictionControllerInvalidPageSize.value)
+            AssertionConcern.asserFalse(page <= 0, ErrorMsg.PredictionControllerInvalidPage.value)
+            AssertionConcern.asserFalse(pageSize < 0, ErrorMsg.PredictionControllerInvalidPageSize.value)
+
+            predictions: list[PredictionResult] = self._service.retrievePredictionByNamePaginated(modelName, page, pageSize)
+            predictionCount: int = self._service.getModelPredictionCount(modelName)
+            msg = {"predictions": [p.__json__() for p in predictions],
+                   "predictionCount": predictionCount}
+
+            return self._createMessage(Status.success.value, msg)
+        except TypeError as e:
+            if str(e) in ErrorMsg.predictionControllerSpecificErrorMsg():
+                return self._createMessage(Status.valueError.value, ResponseMsg.InvalidValueProvided.value)
+        except Exception as e:
+            return self._createMessage(Status.internalError.value, ResponseMsg.UnexpectedErrorEncountered.value)
+
 
     def getPredictionsByModel(self, modelName: str) -> dict[str, Any]:
         try:
@@ -153,7 +195,7 @@ class PredictionController:
         except Exception as e:
             return self._createMessage(Status.internalError.value, ResponseMsg.UnexpectedErrorEncountered.value)
 
-    def deletePrediction(self, predictionId: str) -> Dict[str, Any]:
+    def deletePrediction(self, predictionId: str) -> dict[str, Any]:
         try:
             uuidId = self._createUUIDFromString(predictionId)
             deleted = self._service.deletePrediction(uuidId)
@@ -166,6 +208,14 @@ class PredictionController:
             else:
 
                 return self._createMessage(Status.internalError.value, ResponseMsg.UnexpectedErrorEncountered.value)
+        except Exception as e:
+            return self._createMessage(Status.internalError.value, ResponseMsg.UnexpectedErrorEncountered.value)
+
+    def deleteAllPrediction(self) -> dict[str, Any]:
+        try:
+            numOfRowDeleted: int = self._service.deleteAllPrediction()
+
+            return self._createMessage(Status.success.value, numOfRowDeleted)
         except Exception as e:
             return self._createMessage(Status.internalError.value, ResponseMsg.UnexpectedErrorEncountered.value)
 

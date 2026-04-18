@@ -36,7 +36,7 @@ class PredictionApplicationService:
                              target: list[float | int]) -> PerformanceResult:
         AssertionConcern.assertIsType(modelName, str, ErrorMsg.PredictionServiceInvalidModelName.value)
         AssertionConcern.assertListItemsIsOfType(featureVectors, FeatureVector,
-                                                   ErrorMsg.PredictionServiceInvalidFeatureVector.value)
+                                                 ErrorMsg.PredictionServiceInvalidFeatureVector.value)
         AssertionConcern.assertTrue((len(featureVectors) > 0), ErrorMsg.PredictionServiceInvalidFeatureVector.value)
         AssertionConcern.assertListItemsIsOfType(target, (float | int), ErrorMsg.PredictionServiceInvalidTarget.value)
 
@@ -64,6 +64,26 @@ class PredictionApplicationService:
     def retrieveAllPredictions(self) -> List[PredictionResult]:
         return self._repository.findAll()
 
+    def retrievePaginatedPredictions(self, page: (int | float), pageSize: (int | float)) -> list[PredictionResult]:
+        AssertionConcern.assertIsType(page, (float, int), ErrorMsg.PredictionServiceInvalidPage.value)
+        AssertionConcern.assertIsType(pageSize, (float, int), ErrorMsg.PredictionServiceInvalidPageSize.value)
+        AssertionConcern.asserFalse(page <= 0, ErrorMsg.PredictionServiceInvalidPage.value)
+        AssertionConcern.asserFalse(pageSize < 0, ErrorMsg.PredictionServiceInvalidPageSize.value)
+
+        return self._repository.findAllPaginated(page, pageSize)
+
+    def retrievePredictionByNamePaginated(self, modelName: str, page: (int | float), pageSize: (int | float)) -> list[
+        PredictionResult]:
+        AssertionConcern.assertIsType(modelName, str, ErrorMsg.PredictionServiceInvalidModelName.value)
+        AssertionConcern.assertItemIn(modelName, [NaiveBayes.__name__, DecisionTree.__name__, SVM.__name__],
+                                      ErrorMsg.PredictionServiceInvalidModelName.value)
+        AssertionConcern.assertIsType(page, (float, int), ErrorMsg.PredictionServiceInvalidPage.value)
+        AssertionConcern.assertIsType(pageSize, (float, int), ErrorMsg.PredictionServiceInvalidPageSize.value)
+        AssertionConcern.asserFalse(page <= 0, ErrorMsg.PredictionServiceInvalidPage.value)
+        AssertionConcern.asserFalse(pageSize < 0, ErrorMsg.PredictionServiceInvalidPageSize.value)
+
+        return self._repository.findByNamePaginated(modelName, page, pageSize)
+
     def retrievePredictionsByModel(self, modelName: str) -> List[PredictionResult]:
         AssertionConcern.assertIsType(modelName, str, ErrorMsg.PredictionServiceInvalidModelName.value)
         AssertionConcern.assertItemIn(modelName, [NaiveBayes.__name__, DecisionTree.__name__, SVM.__name__],
@@ -76,8 +96,18 @@ class PredictionApplicationService:
 
         return self._repository.delete(predictionId)
 
+    def deleteAllPrediction(self) -> int:
+        return self._repository.deleteAll()
+
     def getPredictionCount(self) -> int:
-        return len(self._repository.findAll())
+        return self._repository.countAll()
+
+    def getModelPredictionCount(self, modelName: str):
+        AssertionConcern.assertIsType(modelName, str, ErrorMsg.PredictionServiceInvalidModelName.value)
+        AssertionConcern.assertItemIn(modelName, [NaiveBayes.__name__, DecisionTree.__name__, SVM.__name__],
+                                      ErrorMsg.PredictionServiceInvalidModelName.value)
+
+        return self._repository.countByName(modelName)
 
     def getModelStatistics(self) -> dict:
         allPredictions = self._repository.findAll()

@@ -72,6 +72,96 @@ class SQLitePredictionResultRepository(PredictionResultRepository):
         except Exception as e:
             raise DbError(f"Failed to retrieve all PredictionResults: {str(e)}")
 
+    from typing import List
+
+    def findAllPaginated(self, page: int = 1, pageSize: int = 500) -> List[PredictionResult]:
+        AssertionConcern.assertIsType(page, (int, float), ErrorMsg.PredictionResultRepoInvalidPage.value)
+        AssertionConcern.assertIsType(pageSize, (int, float),
+                                      ErrorMsg.PredictionResultRepoInvalidPageSize.value)
+        AssertionConcern.asserFalse(page <= 0, ErrorMsg.PredictionResultRepoInvalidPage.value)
+        AssertionConcern.asserFalse(pageSize < 0, ErrorMsg.PredictionResultRepoInvalidPageSize.value)
+
+        try:
+            offset = (page - 1) * pageSize
+
+            with self._database.getConnection() as conn:
+                cursor = conn.cursor()
+
+                query = '''
+                    SELECT * FROM prediction_results 
+                    ORDER BY time_stamp DESC 
+                    LIMIT ? OFFSET ?
+                '''
+                cursor.execute(query, (pageSize, offset))
+                rows = cursor.fetchall()
+
+                return [self._mapRowToPredictionResult(row) for row in rows]
+
+        except Exception as e:
+            raise DbError(f"Failed to retrieve paginated PredictionResults: {str(e)}")
+
+    def findByNamePaginated(self, modelName: str, page: int = 1, pageSize: int = 500) -> List[PredictionResult]:
+        AssertionConcern.assertIsType(modelName, str, ErrorMsg.PredictionResultRepoInvalidPredictionModelName.value)
+        AssertionConcern.assertItemIn(modelName, ["NaiveBayes", "SVM", "DecisionTree"],
+                                      ErrorMsg.PredictionResultRepoInvalidPredictionModelName.value)
+        AssertionConcern.assertIsType(page, (int, float), ErrorMsg.PredictionResultRepoInvalidPage.value)
+        AssertionConcern.assertIsType(pageSize, (int, float), ErrorMsg.PredictionResultRepoInvalidPageSize.value)
+        AssertionConcern.asserFalse(page <= 0, ErrorMsg.PredictionResultRepoInvalidPage.value)
+        AssertionConcern.asserFalse(pageSize < 0, ErrorMsg.PredictionResultRepoInvalidPageSize.value)
+
+        try:
+            offset = (page - 1) * pageSize
+
+            with self._database.getConnection() as conn:
+                cursor = conn.cursor()
+
+                query = '''
+                    SELECT * FROM prediction_results 
+                    WHERE model_name = ?
+                    ORDER BY time_stamp DESC 
+                    LIMIT ? OFFSET ?
+                '''
+                cursor.execute(query, (modelName, pageSize, offset))
+                rows = cursor.fetchall()
+
+                return [self._mapRowToPredictionResult(row) for row in rows]
+
+        except Exception as e:
+            raise DbError(f"Failed to retrieve paginated PredictionResults by name: {str(e)}")
+
+    def countByName(self, modelName: str) -> int:
+        AssertionConcern.assertIsType(modelName, str, ErrorMsg.PredictionResultRepoInvalidPredictionModelName.value)
+        AssertionConcern.assertItemIn(modelName, ["NaiveBayes", "SVM", "DecisionTree"],
+                                      ErrorMsg.PredictionResultRepoInvalidPredictionModelName.value)
+        try:
+            with self._database.getConnection() as conn:
+                cursor = conn.cursor()
+
+                query = 'SELECT COUNT(*) FROM prediction_results WHERE model_name = ?'
+                cursor.execute(query, (modelName,))
+
+                # fetchone() returns a tuple, e.g., (150,)
+                result = cursor.fetchone()
+                return result[0] if result else 0
+
+        except Exception as e:
+            raise DbError(f"Failed to count PredictionResults by name: {str(e)}")
+
+    def countAll(self) -> int:
+        try:
+            with self._database.getConnection() as conn:
+                cursor = conn.cursor()
+
+                query = 'SELECT COUNT(*) FROM prediction_results'
+                cursor.execute(query)
+
+                result = cursor.fetchone()
+                # Returns the first element of the tuple, or 0 if the table is empty
+                return result[0] if result else 0
+
+        except Exception as e:
+            raise DbError(f"Failed to count all PredictionResults: {str(e)}")
+
     def findByModelName(self, modelName: str) -> List[PredictionResult]:
         AssertionConcern.assertIsType(modelName, str, ErrorMsg.PredictionResultRepoInvalidPredictionModelName.value)
         AssertionConcern.assertItemIn(modelName, ["NaiveBayes", "SVM", "DecisionTree"],
@@ -105,6 +195,19 @@ class SQLitePredictionResultRepository(PredictionResultRepository):
                 return cursor.rowcount > 0
         except Exception as e:
             raise DbError(f"Failed to delete PredictionResult: {str(e)}")
+
+    def deleteAll(self) -> int:
+        try:
+            with self._database.getConnection() as conn:
+                cursor = conn.cursor()
+
+                cursor.execute('DELETE FROM prediction_results')
+                conn.commit()
+
+                return cursor.rowcount
+
+        except Exception as e:
+            raise DbError(f"Failed to delete all PredictionResults: {str(e)}")
 
     def _mapRowToPredictionResult(self, row: sqlite3.Row) -> PredictionResult:
         # Deserialize the feature vector from JSON

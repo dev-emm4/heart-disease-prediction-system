@@ -6,7 +6,7 @@ import pytest
 
 from src.application import PredictionApplicationService
 from src.domain import ErrorMsg
-from src.domain.predictionModel import FeatureVector, DecisionTree, NaiveBayes, SVM
+from src.domain.predictionModel import FeatureVector, DecisionTree, NaiveBayes, SVM, PredictionResult
 from src.infrastructure import DatabaseConnection
 from src.infrastructure.persistence import SQLitePredictionResultRepository
 
@@ -137,6 +137,43 @@ class TestPredictionResultApplicationService:
             except TypeError as e:
                 assert str(e) == ErrorMsg.PredictionServiceInvalidPredictionId.value
 
+    def test_retrievePredictionByNamePaginated_withValidParameters_returnPredictions(self, service,
+                                                                                     sampleFeatureVector):
+        service.makePrediction("NaiveBayes", [sampleFeatureVector])
+        service.makePrediction("NaiveBayes", [sampleFeatureVector])
+        service.makePrediction("SVM", [sampleFeatureVector])
+
+        results = service.retrievePredictionByNamePaginated("NaiveBayes", 1, 3)
+        assert len(results) == 2
+        for prediction in results:
+            assert prediction.modelName() == "NaiveBayes"
+
+        results = service.retrievePredictionByNamePaginated("SVM", 1, 3)
+        assert len(results) == 1
+        assert results[0].modelName() == "SVM"
+
+    def test_retrievePredictionByNamePaginated_withInvalidParameters_returnPredictions(self, service):
+        for i in range(10):
+            try:
+                if i == 0:
+                    service.retrievePredictionByNamePaginated("invalid", 1, 2)
+                elif i == 1:
+                    service.retrievePredictionByNamePaginated(None, 1, 3)
+                elif i == 2:
+                    service.retrievePredictionByNamePaginated(10, 1, 3)
+                elif i == 3:
+                    service.retrievePredictionByNamePaginated("NaiveBayes", '1', 3)
+                elif i == 4:
+                    service.retrievePredictionByNamePaginated("NaiveBayes", None, 3)
+                elif i == 5:
+                    service.retrievePredictionByNamePaginated("NaiveBayes", 1, "3")
+                else:
+                    service.retrievePredictionByNamePaginated("NaiveBayes", 1, None)
+            except TypeError as e:
+                assert str(e) in [ErrorMsg.PredictionServiceInvalidModelName.value,
+                                  ErrorMsg.PredictionServiceInvalidPage.value,
+                                  ErrorMsg.PredictionServiceInvalidPageSize.value]
+
     def test_retrieveAllPredictions_returnAllPredictions(self, service, sampleFeatureVector):
         prediction1 = service.makePrediction("NaiveBayes", [sampleFeatureVector])
         prediction2 = service.makePrediction("SVM", [sampleFeatureVector])
@@ -154,6 +191,36 @@ class TestPredictionResultApplicationService:
         assert any(result.timeStamp() == prediction2[0].timeStamp() for result in results)
         assert any(result.id() == prediction1[0].id() for result in results)
         assert any(result.id() == prediction2[0].id() for result in results)
+
+    def test_retrievePaginatedPredictions_withValidPageAndSize_retrievePredictions(self, service, sampleFeatureVector):
+        service.makePrediction("NaiveBayes", [sampleFeatureVector])
+        service.makePrediction("SVM", [sampleFeatureVector])
+        service.makePrediction("SVM", [sampleFeatureVector])
+
+        predictionResults: list[PredictionResult] = service.retrievePaginatedPredictions(1, 2)
+
+        assert len(predictionResults) == 2
+
+    def test_retrievePaginatedPredictions_withInvalidPageAndSize_raiseException(self, service):
+        for i in range(8):
+            try:
+                if i == 0:
+                    service.retrievePaginatedPredictions('0', 2)
+                elif i == 1:
+                    service.retrievePaginatedPredictions(1, "2")
+                elif i == 2:
+                    service.retrievePaginatedPredictions(None, 2)
+                elif i == 3:
+                    service.retrievePaginatedPredictions(0, 2)
+                elif i == 4:
+                    service.retrievePaginatedPredictions(-1, 2)
+                elif i == 5:
+                    service.retrievePaginatedPredictions(1, -1)
+                else:
+                    service.retrievePaginatedPredictions(1, None)
+            except TypeError as e:
+                assert str(e) in [ErrorMsg.PredictionServiceInvalidPage.value,
+                                  ErrorMsg.PredictionServiceInvalidPageSize.value]
 
     def test_deletePrediction_withValidId_delete(self, service, sampleFeatureVector):
         results = service.makePrediction("NaiveBayes", [sampleFeatureVector])
@@ -181,6 +248,17 @@ class TestPredictionResultApplicationService:
         deleted = service.deletePrediction(non_existent_id)
         assert deleted is False
 
+    def test_deleteAllPrediction_returnNumOfDeletedRow(self, service, sampleFeatureVector):
+        service.makePrediction("NaiveBayes", [sampleFeatureVector])
+        service.makePrediction("SVM", [sampleFeatureVector])
+        service.makePrediction("SVM", [sampleFeatureVector])
+
+        numOfDeletedRows: int = service.deleteAllPrediction()
+        assert numOfDeletedRows == 3
+
+        numOfDeletedRows: int = service.deleteAllPrediction()
+        assert numOfDeletedRows == 0
+
     def test_getPredictionCount_returnCount(self, service, sampleFeatureVector):
         initial_count = service.getPredictionCount()
 
@@ -189,6 +267,32 @@ class TestPredictionResultApplicationService:
 
         count = service.getPredictionCount()
         assert count == initial_count + 2
+
+    def test_getModelPredictionCount_withValidParameters_returnCount(self, service, sampleFeatureVector):
+        service.makePrediction("NaiveBayes", [sampleFeatureVector])
+        service.makePrediction("NaiveBayes", [sampleFeatureVector])
+        service.makePrediction("SVM", [sampleFeatureVector])
+
+        NBPredictionCount = service.getModelPredictionCount("NaiveBayes")
+        assert NBPredictionCount == 2
+
+        NBPredictionCount = service.getModelPredictionCount("SVM")
+        assert NBPredictionCount == 1
+
+        DTPredictionCount =  service.getModelPredictionCount("DecisionTree")
+        assert DTPredictionCount == 0
+
+    def test_getModelPredictionCount_withInvalidParameters_returnCount(self, service):
+        for i in range(4):
+            try:
+                if i == 0:
+                    service.getModelPredictionCount("InvalidModelName")
+                elif i == 1:
+                    service.getModelPredictionCount(1)
+                else:
+                    service.getModelPredictionCount(None)
+            except TypeError as e:
+                assert str(e) == ErrorMsg.PredictionServiceInvalidModelName.value
 
     def test_getModelStatistics_returnStat(self, service, sampleFeatureVector):
         models = ["DecisionTree", "NaiveBayes", "SVM", "DecisionTree"]

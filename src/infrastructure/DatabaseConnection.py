@@ -5,25 +5,13 @@ from typing import Optional
 
 
 class DatabaseConnection:
-    """
-    Manages SQLite database connections and initialization.
-
-    Provides a singleton-like interface to ensure consistent database
-    state and connection management throughout the application.
-
-    For in-memory databases (:memory:), keeps a persistent connection
-    to maintain the database across operations.
-    """
-
     _instance: Optional['DatabaseConnection'] = None
     _persistentConnection: Optional[sqlite3.Connection] = None
 
     def __new__(cls, db_path: str = "prediction_results.db"):
-        # Create new instance for each in-memory DB (for testing isolation)
         if db_path == ":memory:":
             return super(DatabaseConnection, cls).__new__(cls)
 
-        # Singleton for file-based databases
         if cls._instance is None:
             cls._instance = super(DatabaseConnection, cls).__new__(cls)
         return cls._instance
@@ -35,7 +23,6 @@ class DatabaseConnection:
         self._dbPath = db_path
         self._initialized = True
 
-        # For in-memory databases, keep a persistent connection
         if db_path == ":memory:":
             self._persistentConnection = sqlite3.connect(":memory:")
             self._persistentConnection.row_factory = sqlite3.Row
@@ -62,10 +49,8 @@ class DatabaseConnection:
     @contextmanager
     def getConnection(self):
         if self._dbPath == ":memory:":
-            # For in-memory, use the persistent connection
             yield self._persistentConnection
         else:
-            # For file-based, create a new connection
             conn = sqlite3.connect(self._dbPath)
             conn.row_factory = sqlite3.Row
             try:
@@ -89,14 +74,12 @@ class DatabaseConnection:
         WARNING: This will delete all data!
         """
         if self._dbPath == ":memory:":
-            # For in-memory, close and recreate
             if self._persistentConnection:
                 self._persistentConnection.close()
             self._persistentConnection = sqlite3.connect(":memory:")
             self._persistentConnection.row_factory = sqlite3.Row
             self._initializeDatabase()
         else:
-            # For file-based, delete and reinitialize
             if os.path.exists(self._dbPath):
                 os.remove(self._dbPath)
             self._initializeDatabase()

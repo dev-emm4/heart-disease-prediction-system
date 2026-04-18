@@ -4,10 +4,10 @@ from uuid import uuid4
 
 import pytest
 
-from src.domain.predictionModel import NaiveBayes, SVM, DecisionTree
 from src.application import PredictionApplicationService
 from src.controller import PredictionController, Status, ResponseMsg
 from src.domain.predictionModel import FeatureVector, FeatureVectorAttributes
+from src.domain.predictionModel import NaiveBayes, SVM, DecisionTree
 from src.infrastructure import DatabaseConnection, FeatureVectorLoader
 from src.infrastructure.persistence import SQLitePredictionResultRepository
 
@@ -196,7 +196,7 @@ class TestPredictionController:
         response = controller.makeBulkPredictions(NaiveBayes.__name__, CSVLocation,
                                                   dropColumn=[13])  # dropping the target column
 
-        assert response["status"] == "success"
+        assert response["status"] == Status.success.value
         assert isinstance(response["message"], list)
         assert len(response["message"]) == CSVLength
         for prediction in response["message"]:
@@ -224,7 +224,8 @@ class TestPredictionController:
     def test_makeBulkPredictions_InvalidCsv_returnError(self, controller, CSVLocation):
         for i in range(4):
             if i == 0:
-                response = controller.makeBulkPredictions(NaiveBayes.__name__, CSVLocation, dropColumn=[100]) # dropColumn exceed the maximum number of column in Csv
+                response = controller.makeBulkPredictions(NaiveBayes.__name__, CSVLocation, dropColumn=[
+                    100])  # dropColumn exceed the maximum number of column in Csv
             elif i == 1:
                 response = controller.makeBulkPredictions(NaiveBayes.__name__, CSVLocation, dropColumn=[1, 2, 3,
                                                                                                         4])  # will produce invalid feature of length 10
@@ -238,7 +239,7 @@ class TestPredictionController:
             assert response["message"] == ResponseMsg.csvIsInvalid.value
 
     def test_makeBulkPrediction_SVMFeaturesCombinedWithDifferentModel_returnError(self, controller,
-                                                                                                CSVLocation):
+                                                                                  CSVLocation):
         response = controller.makeBulkPredictions(NaiveBayes.__name__, CSVLocation,
                                                   dropColumn=[1, 5, 13])  # dropping sex and fbs and target
 
@@ -246,7 +247,7 @@ class TestPredictionController:
         assert response["message"] == ResponseMsg.csvIsInvalid.value
 
     def test_makeBulkPrediction_SVMFeaturesCombinedWithSVM_returnPredictions(self, controller, CSVLocation,
-                                                                                   CSVLength):
+                                                                             CSVLength):
         response = controller.makeBulkPredictions(SVM.__name__, CSVLocation,
                                                   dropColumn=[1, 5, 13])  # dropping sex and fbs and target
 
@@ -290,7 +291,8 @@ class TestPredictionController:
     def test_calculatePerformance_withInvalidCSV_returnError(self, controller, CSVLocation):
         for i in range(3):
             if i == 0:
-                response = controller.calculatePerformance(NaiveBayes.__name__, CSVLocation, [100], 13) # dropColumn exceed the maximum number of column in Csv
+                response = controller.calculatePerformance(NaiveBayes.__name__, CSVLocation, [100],
+                                                           13)  # dropColumn exceed the maximum number of column in Csv
             elif i == 1:
                 response = controller.calculatePerformance(NaiveBayes.__name__, CSVLocation, [1, 2, 3, 4],
                                                            13)  # will produce invalid feature of length 9
@@ -301,7 +303,7 @@ class TestPredictionController:
             assert response["message"] == ResponseMsg.csvIsInvalid.value
 
     def test_calculatePerformance_SVMFeaturesCombinedWithDifferentModel_returnError(self, controller,
-                                                                                          CSVLocation):
+                                                                                    CSVLocation):
         response = controller.calculatePerformance(DecisionTree.__name__, CSVLocation, [1, 5],
                                                    13)  # dropping sex and fbs and target
 
@@ -327,6 +329,105 @@ class TestPredictionController:
         assert isinstance(storedPredictionResults["message"], list)
         assert storedPredictionResults["message"][0] in [response1["message"], response2["message"]]
         assert storedPredictionResults["message"][1] in [response1["message"], response2["message"]]
+
+    def test_getPredictionsByNamePaginated_withStoredPredictions_returnPredictions(self, controller, sampleFeatureJson):
+        controller.makePrediction(NaiveBayes.__name__, sampleFeatureJson)
+        controller.makePrediction(SVM.__name__, sampleFeatureJson)
+        controller.makePrediction(SVM.__name__, sampleFeatureJson)
+
+        storedPredictionResults = controller.getPredictionsByNamePaginated(SVM.__name__, 1, 2)
+
+        assert storedPredictionResults["status"] == Status.success.value
+        assert isinstance(storedPredictionResults, dict)
+        assert isinstance(storedPredictionResults["message"]["predictions"], list)
+        assert len(storedPredictionResults["message"]["predictions"]) == 2
+        assert storedPredictionResults["message"]["predictionCount"] == 2
+
+        storedPredictionResults = controller.getPredictionsByNamePaginated(NaiveBayes.__name__, 1, 2)
+
+        assert storedPredictionResults["status"] == Status.success.value
+        assert isinstance(storedPredictionResults, dict)
+        assert isinstance(storedPredictionResults["message"]["predictions"], list)
+        assert len(storedPredictionResults["message"]["predictions"]) == 1
+        assert storedPredictionResults["message"]["predictionCount"] == 1
+
+        storedPredictionResults = controller.getPredictionsByNamePaginated(DecisionTree.__name__, 1, 2)
+
+        assert storedPredictionResults["status"] == Status.success.value
+        assert isinstance(storedPredictionResults, dict)
+        assert isinstance(storedPredictionResults["message"]["predictions"], list)
+        assert len(storedPredictionResults["message"]["predictions"]) == 0
+        assert storedPredictionResults["message"]["predictionCount"] == 0
+
+    def test_getPredictionsByNamePaginated_withInvalidParameters_returnError(self, controller):
+        for i in range(11):
+            if i == 0:
+                results = controller.getPredictionsByNamePaginated(DecisionTree.__name__, "1", 2)
+            elif i == 1:
+                results = controller.getPredictionsByNamePaginated(DecisionTree.__name__, 1, '2')
+            elif i == 2:
+                results = controller.getPredictionsByNamePaginated(DecisionTree.__name__, None, 2)
+            elif i == 3:
+                results = controller.getPredictionsByNamePaginated(DecisionTree.__name__, 1, None)
+            elif i == 4:
+                results = controller.getPredictionsByNamePaginated(DecisionTree.__name__, 0, 2)
+            elif i == 5:
+                results = controller.getPredictionsByNamePaginated(DecisionTree.__name__, -1, 2)
+            elif i == 6:
+                results = controller.getPredictionsByNamePaginated("InvalidModelName", 1, 2)
+            elif i == 7:
+                results = controller.getPredictionsByNamePaginated(1, 1, 2)
+            elif i == 8:
+                results = controller.getPredictionsByNamePaginated(None, 1, 2)
+            else:
+                results = controller.getPredictionsByNamePaginated(DecisionTree.__name__, 1, -1)
+
+            assert isinstance(results, dict)
+            assert results["status"] == Status.valueError.value
+            assert results["message"] == ResponseMsg.InvalidValueProvided.value
+
+    def test_getAllPaginatedPredictions_withStoredPredictions_returnPredictions(self, controller, sampleFeatureJson):
+        controller.makePrediction(NaiveBayes.__name__, sampleFeatureJson)
+        controller.makePrediction(SVM.__name__, sampleFeatureJson)
+        controller.makePrediction(SVM.__name__, sampleFeatureJson)
+
+        storedPredictionResults = controller.getAllPaginatedPredictions(1, 2)
+
+        assert storedPredictionResults["status"] == Status.success.value
+        assert isinstance(storedPredictionResults, dict)
+        assert isinstance(storedPredictionResults["message"]["predictions"], list)
+        assert len(storedPredictionResults["message"]["predictions"]) == 2
+        assert storedPredictionResults["message"]["predictionCount"] == 3
+
+    def test_getAllPaginatedPredictions_withNoStoredPredictions_returnEmptyList(self, controller, sampleFeatureJson):
+        storedPredictionResults = controller.getAllPaginatedPredictions(1, 2)
+
+        assert storedPredictionResults["status"] == Status.success.value
+        assert isinstance(storedPredictionResults, dict)
+        assert isinstance(storedPredictionResults["message"]["predictions"], list)
+        assert len(storedPredictionResults["message"]["predictions"]) == 0
+        assert storedPredictionResults["message"]["predictionCount"] == 0
+
+    def test_getAllPaginatedPredictions_withInvalidParameters_returnError(self, controller):
+        for i in range(8):
+            if i == 0:
+                results = controller.getAllPaginatedPredictions("1", 2)
+            elif i == 1:
+                results = controller.getAllPaginatedPredictions(1, '2')
+            elif i == 2:
+                results = controller.getAllPaginatedPredictions(None, 2)
+            elif i == 3:
+                results = controller.getAllPaginatedPredictions(1, None)
+            elif i == 4:
+                results = controller.getAllPaginatedPredictions(0, 2)
+            elif i == 5:
+                results = controller.getAllPaginatedPredictions(-1, 2)
+            else:
+                results = controller.getAllPaginatedPredictions(1, -1)
+
+            assert isinstance(results, dict)
+            assert results["status"] == Status.valueError.value
+            assert results["message"] == ResponseMsg.InvalidValueProvided.value
 
     def test_getAllPredictions_withNoStoredPredictions_returnEmptyList(self, controller):
         storedPredictionResults = controller.getAllPredictions()
@@ -391,6 +492,21 @@ class TestPredictionController:
             assert response["status"] == Status.valueError.value
             assert response["message"] == ResponseMsg.InvalidValueProvided.value
 
+    def test_deletePredictionAll_returnTrueNoOfRowsDeleted(self, controller, sampleFeatureJson):
+        controller.makePrediction(NaiveBayes.__name__, sampleFeatureJson)
+        controller.makePrediction(SVM.__name__, sampleFeatureJson)
+        controller.makePrediction(SVM.__name__, sampleFeatureJson)
+
+        response = controller.deleteAllPrediction()
+
+        assert response["status"] == Status.success.value
+        assert response["message"] == 3
+
+        response = controller.deleteAllPrediction()
+
+        assert response["status"] == Status.success.value
+        assert response["message"] == 0
+
     def test_getStatistics_withStoredPredictions_returnStat(self, controller, sampleFeatureJson):
         controller.makePrediction(NaiveBayes.__name__, sampleFeatureJson)
         controller.makePrediction(SVM.__name__, sampleFeatureJson)
@@ -413,4 +529,3 @@ class TestPredictionController:
         assert isinstance(response["message"]["stat"], dict)
         assert response["message"]["totalCount"] == 0
         assert response["message"]["stat"] == {}
-
