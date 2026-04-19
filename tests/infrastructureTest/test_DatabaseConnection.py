@@ -21,8 +21,8 @@ class TestDatabaseConnection:
         assert db1 is not db2
 
         # But file-based databases should be singletons
-        db3 = DatabaseConnection(db_path="../../../test.db")
-        db4 = DatabaseConnection(db_path="../../../test.db")
+        db3 = DatabaseConnection()
+        db4 = DatabaseConnection()
         assert db3 is db4
 
     def test_getConnection_returnConnectionContextmanager(self):

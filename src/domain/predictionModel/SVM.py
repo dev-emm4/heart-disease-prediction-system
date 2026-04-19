@@ -1,7 +1,7 @@
 import os
+import sys
 import uuid
 from datetime import datetime
-from typing import LiteralString
 
 import onnxruntime as rt
 from onnxruntime.capi.onnxruntime_pybind11_state import InferenceSession
@@ -19,9 +19,12 @@ class SVM(PredictionModel):
         self._inputName = self._trainedSVM.get_inputs()[0].name
         self._labelName = self._trainedSVM.get_outputs()[0].name
 
-    def _getAddressOfModelFile(self) -> (LiteralString | str | bytes):
-        script_dir = os.path.dirname(__file__)
-        return os.path.join(script_dir, "SVM.onnx")
+    def _getAddressOfModelFile(self) -> str:
+        if getattr(sys, 'frozen', False):
+            base = sys._MEIPASS
+        else:
+            base = os.path.dirname(__file__)
+        return os.path.join(base, "SVM.onnx")
 
     def makePrediction(self, featureVectors: list[FeatureVector]) -> list[PredictionResult]:
         AssertionConcern.assertListItemsIsOfType(featureVectors, FeatureVector,

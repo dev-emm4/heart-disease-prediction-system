@@ -1,0 +1,62 @@
+name: Build CardioAI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller cardioai.spec
+
+      - name: Zip output (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path dist/CardioAI -DestinationPath CardioAI-Windows.zip
+        shell: pwsh
+
+      - name: Zip output (macOS)
+        if: runner.os == 'macOS'
+        run: zip -r CardioAI-macOS.zip dist/CardioAI
+
+      - name: Zip output (Linux)
+        if: runner.os == 'Linux'
+        run: zip -r CardioAI-Linux.zip dist/CardioAI
+
+      - name: Upload release asset (Windows)
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: CardioAI-Windows.zip
+
+      - name: Upload release asset (macOS)
+        if: runner.os == 'macOS'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: CardioAI-macOS.zip
+
+      - name: Upload release asset (Linux)
+        if: runner.os == 'Linux'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: CardioAI-Linux.zip

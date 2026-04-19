@@ -1,16 +1,16 @@
 import os
+import sys
 import uuid
 from datetime import datetime
-from typing import LiteralString
 
 import onnxruntime as rt
 from onnxruntime.capi.onnxruntime_pybind11_state import InferenceSession
 
+from common.AssertionConcern import AssertionConcern
+from common.ErrorMsg import ErrorMsg
 from .FeatureVector import FeatureVector
 from .PredictionModel import PredictionModel
 from .PredictionResult import PredictionResult
-from common.AssertionConcern import AssertionConcern
-from common.ErrorMsg import ErrorMsg
 
 
 class NaiveBayes(PredictionModel):
@@ -19,12 +19,16 @@ class NaiveBayes(PredictionModel):
         self._inputName = self._trainedNB.get_inputs()[0].name
         self._labelName = self._trainedNB.get_outputs()[0].name
 
-    def _getAddressOfModelFile(self) -> (LiteralString | str | bytes):
-        script_dir = os.path.dirname(__file__)
-        return os.path.join(script_dir, "NaiveBayes.onnx")
+    def _getAddressOfModelFile(self) -> str:
+        if getattr(sys, 'frozen', False):
+            base = sys._MEIPASS
+        else:
+            base = os.path.dirname(__file__)
+        return os.path.join(base, "NaiveBayes.onnx")
 
     def makePrediction(self, featureVectors: list[FeatureVector]) -> list[PredictionResult]:
-        AssertionConcern.assertListItemsIsOfType(featureVectors, FeatureVector, ErrorMsg.PredictionModelInvalidFeatureVector.value)
+        AssertionConcern.assertListItemsIsOfType(featureVectors, FeatureVector,
+                                                 ErrorMsg.PredictionModelInvalidFeatureVector.value)
         AssertionConcern.asserFalse(len(featureVectors) == 0, ErrorMsg.PredictionModelInvalidFeatureVector.value)
 
         twoDimensionalArray: list[list[float]] = self._transformFeatureVectorListTo2dArray(featureVectors)
