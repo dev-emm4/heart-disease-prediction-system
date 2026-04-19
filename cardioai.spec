@@ -40,7 +40,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,      # False = no terminal window pops up behind the app
+    console=True,      # False = no terminal window pops up behind the app
     icon=None,          # replace with 'assets/icon.ico' if you have one
 )
 
