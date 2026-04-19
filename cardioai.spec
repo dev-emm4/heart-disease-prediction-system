@@ -4,7 +4,7 @@ from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
 block_cipher = None
 
 a = Analysis(
-    ['main.py'],                        # your entry point
+    ['src/main.py'],                        # your entry point
     pathex=['.'],                       # look for imports here
     binaries=[],
     datas=[
